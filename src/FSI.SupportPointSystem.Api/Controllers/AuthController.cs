@@ -1,5 +1,6 @@
 using FSI.SupportPointSystem.Application.Common.Results;
 using FSI.SupportPointSystem.Application.Features.Auth.Commands.Login;
+using FSI.SupportPointSystem.Application.Features.Auth.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +10,7 @@ namespace FSI.SupportPointSystem.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(ISender sender) : ControllerBase
 {
-    /// <summary>Autentica um usuário (Admin ou Vendedor) via CPF e senha. Retorna JWT válido por 8h.</summary>
+    /// <summary>Autentica um usuário (Admin ou Vendedor) via CPF e senha. Retorna JWT válido por 8h.  ADMIN  "cpf": "30776528890", "password": "Admin@123" </summary>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

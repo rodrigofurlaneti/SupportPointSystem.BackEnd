@@ -5,33 +5,15 @@ using FSI.SupportPointSystem.Domain.Interfaces.Services;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using FSI.SupportPointSystem.Application.Features.Auth.Dtos;
+using FSI.SupportPointSystem.Application.Features.Auth.Commands.Validator;
 
 namespace FSI.SupportPointSystem.Application.Features.Auth.Commands.Login;
-
-public sealed record LoginResponse(
-    string Token,
-    string UserRole,
-    Guid UserId,
-    Guid? SellerId,
-    DateTime ExpiresAt
-);
 
 public sealed record LoginCommand(
     string Cpf,
     string Password
 ) : IRequest<Result<LoginResponse>>;
-
-public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
-{
-    public LoginCommandValidator()
-    {
-        RuleFor(x => x.Cpf)
-            .NotEmpty().WithMessage("CPF é obrigatório.");
-
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Senha é obrigatória.");
-    }
-}
 
 public sealed class LoginCommandHandler(
     IUserRepository userRepository,
