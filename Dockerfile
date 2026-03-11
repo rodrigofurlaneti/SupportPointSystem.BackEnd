@@ -13,7 +13,7 @@ RUN dotnet restore "src/FSI.SupportPointSystem.Api/FSI.SupportPointSystem.Api.cs
 
 # Copia todo o restante do código e compila
 COPY . .
-WORKDIR "/src/src/FSI.SupportPointSystem.Api"
+WORKDIR "/src/FSI.SupportPointSystem.Api"
 RUN dotnet publish "FSI.SupportPointSystem.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # ESTÁGIO 2: Runtime (Imagem final leve)
