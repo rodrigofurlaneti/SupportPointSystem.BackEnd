@@ -8,9 +8,22 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuração de CORS com a sua política WebAppPolicy
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WebAppPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // =========================================================
 // Camadas: Application + Infrastructure
 // =========================================================
+builder.Services.AddHealthChecks();
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
@@ -104,21 +117,26 @@ builder.Logging.AddConsole();
 
 var app = builder.Build();
 
+// --- 3. Middleware Pipeline (Ordem de Execução) ---
+// 1. Tratamento de erro (deve ser o primeiro para capturar tudo)
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+// 2. CORS (deve vir antes de Redirection e Routing)
+app.UseCors("WebAppPolicy");
+
+// 3. Comente isso para testar localmente via HTTPapp.UseAuthentication();
+app.UseHttpsRedirection(); 
+
 // =========================================================
 // Pipeline de requisições
 // =========================================================
-app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SupportPointSystem v2.0"));
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SupportPointSystem v2.0"));
-}
-
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
 

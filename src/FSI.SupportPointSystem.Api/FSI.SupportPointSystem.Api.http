@@ -1,0 +1,28 @@
+﻿@FSI.SupportPointSystem.Api_HostAddress = http://localhost:5083
+
+### Realizar Check-in
+# Substitua os IDs por GUIDs válidos que existam no seu banco SupportPointDB
+POST {{FSI.SupportPointSystem.Api_HostAddress}}/api/visit/checkin
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sellerId": "00000000-0000-0000-0000-000000000000",
+  "customerId": "00000000-0000-0000-0000-000000000000",
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}
+
+###
+
+### Realizar Check-out
+POST {{FSI.SupportPointSystem.Api_HostAddress}}/api/visit/checkout
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sellerId": "00000000-0000-0000-0000-000000000000",
+  "customerId": "00000000-0000-0000-0000-000000000000",
+  "latitude": -23.5506,
+  "longitude": -46.6334
+}

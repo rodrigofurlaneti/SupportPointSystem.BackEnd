@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>13</LangVersion>
     <InvariantGlobalization>false</InvariantGlobalization>
+	<AssemblyName>FSI.SupportPointSystem.Api</AssemblyName>
+	<RootNamespace>FSI.SupportPointSystem.Api</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FSI.SupportPointSystem.Application\FSI.SupportPointSystem.Application.csproj" />
