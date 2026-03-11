@@ -1,0 +1,54 @@
+name: Deploy Multi-Cloud API (AWS & Azure)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  # JOB 1: AWS (Linux) - Ajustado para rodar atrás do Nginx
+  deploy-aws:
+    name: Deploy to AWS EC2
+    runs-on: self-hosted
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+      - name: Build and Run on AWS
+        env:
+          DB_CONN: ${{ secrets.DB_CONNECTION_STRING }}
+        run: |
+          docker build -t checkvisit-api .
+          docker stop checkvisit-container || true
+          docker rm checkvisit-container || true
+          # Mudamos de 80:8080 para 5000:8080 para não conflitar com o Nginx
+          docker run -d --name checkvisit-container --restart always -p 5000:8080 -e ConnectionStrings__DefaultConnection="$DB_CONN" checkvisit-api
+
+  # JOB 2: AZURE (Windows / PowerShell)
+  deploy-azure:
+    name: Deploy to Azure VM
+    runs-on: azure-vm
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Build and Run on Azure
+        env:
+          DB_CONN: ${{ secrets.DB_CONNECTION_STRING }}
+        shell: powershell
+        run: |
+          docker build -t checkvisit-api .
+          
+          $container = docker ps -a -q -f "name=checkvisit-container-azure"
+          if ($container) { 
+              docker stop checkvisit-container-azure
+              docker rm checkvisit-container-azure 
+          }
+          
+          # Na Azure, como você não usa Nginx, pode manter o mapeamento direto
+          docker run -d `
+            --name checkvisit-container-azure `
+            --restart always `
+            -p 8080:8080 `
+            -p 443:443 `
+            -v C:\certs:/app/certs `
+            -e ConnectionStrings__DefaultConnection="$($env:DB_CONN)" `
+            checkvisit-api
