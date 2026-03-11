@@ -5,22 +5,37 @@ on:
     branches: [ main ]
 
 jobs:
-  # JOB 1: AWS (Linux) - Ajustado para rodar atrás do Nginx
+  # JOB 1: AWS (Linux + Nginx)
   deploy-aws:
     name: Deploy to AWS EC2
     runs-on: self-hosted
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
+
       - name: Build and Run on AWS
         env:
           DB_CONN: ${{ secrets.DB_CONNECTION_STRING }}
         run: |
+          # 1. Build da nova imagem
           docker build -t checkvisit-api .
+          
+          # 2. Para e remove o container antigo (se existir)
           docker stop checkvisit-container || true
           docker rm checkvisit-container || true
-          # Mudamos de 80:8080 para 5000:8080 para não conflitar com o Nginx
-          docker run -d --name checkvisit-container --restart always -p 5000:8080 -e ConnectionStrings__DefaultConnection="$DB_CONN" checkvisit-api
+          
+          # 3. Roda o novo container na porta 5000 (para o Nginx fazer o Proxy)
+          # Usamos a variável de ambiente conforme o padrão do .NET 8
+          docker run -d \
+            --name checkvisit-container \
+            --restart always \
+            -p 5000:8080 \
+            -e ConnectionStrings__DefaultConnection="$DB_CONN" \
+            -e ASPNETCORE_URLS="http://+:8080" \
+            checkvisit-api
+            
+          # 4. Limpeza de imagens "soltas" para economizar espaço
+          docker image prune -f
 
   # JOB 2: AZURE (Windows / PowerShell)
   deploy-azure:
@@ -43,7 +58,6 @@ jobs:
               docker rm checkvisit-container-azure 
           }
           
-          # Na Azure, como você não usa Nginx, pode manter o mapeamento direto
           docker run -d `
             --name checkvisit-container-azure `
             --restart always `
@@ -51,4 +65,5 @@ jobs:
             -p 443:443 `
             -v C:\certs:/app/certs `
             -e ConnectionStrings__DefaultConnection="$($env:DB_CONN)" `
+            -e ASPNETCORE_URLS="http://+:8080;https://+:443" `
             checkvisit-api
