@@ -1,5 +1,7 @@
 using FSI.SupportPointSystem.Application.Features.Visits.Commands.RegisterCheckin;
 using FSI.SupportPointSystem.Application.Features.Visits.Commands.RegisterCheckout;
+using FSI.SupportPointSystem.Application.Features.Visits.Queries.GetAllVisits;
+using FSI.SupportPointSystem.Application.Features.Visits.Queries.GetVisitById;
 using FSI.SupportPointSystem.Application.Features.Visits.Queries.GetVisitHistory;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +15,42 @@ namespace FSI.SupportPointSystem.Api.Controllers;
 [Authorize]
 public sealed class VisitController(ISender sender) : ControllerBase
 {
+    /// <summary>
+    /// Retorna todas as visitas paginadas. Apenas ADMIN.
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "ADMIN")]
+    [ProducesResponseType(typeof(IReadOnlyList<VisitResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new GetAllVisitsQuery(page, pageSize), cancellationToken);
+        return result.Match<IActionResult>(
+            onSuccess: Ok,
+            onFailure: error => BadRequest(new { error.Code, error.Description }));
+    }
+
+    /// <summary>
+    /// Retorna uma visita pelo Id. Apenas ADMIN.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "ADMIN")]
+    [ProducesResponseType(typeof(VisitResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new GetVisitByIdQuery(id), cancellationToken);
+        return result.Match<IActionResult>(
+            onSuccess: Ok,
+            onFailure: error => error.Code == "NOT_FOUND"
+                ? NotFound(new { error.Code, error.Description })
+                : BadRequest(new { error.Code, error.Description }));
+    }
+
     /// <summary>
     /// Registra check-in do vendedor autenticado.
     /// Valida raio de 100m e bloqueia múltiplos check-ins simultâneos.
@@ -39,14 +77,14 @@ public sealed class VisitController(ISender sender) : ControllerBase
         var result = await sender.Send(command, cancellationToken);
 
         return result.Match<IActionResult>(
-            onSuccess: response => CreatedAtAction(nameof(GetHistory), new { sellerId = response.SellerId }, response),
+            onSuccess: response => CreatedAtAction(nameof(GetById), new { id = response.VisitId }, response),
             onFailure: error => error.Code switch
             {
-                "CONFLICT_CHECKIN"  => Conflict(new { error.Code, error.Description }),
-                "OUTSIDE_RADIUS"    => StatusCode(StatusCodes.Status403Forbidden, new { error.Code, error.Description }),
-                "SELLER_NOT_FOUND"  => NotFound(new { error.Code, error.Description }),
-                "CUSTOMER_NOT_FOUND"=> NotFound(new { error.Code, error.Description }),
-                _                   => BadRequest(new { error.Code, error.Description })
+                "CONFLICT_CHECKIN"   => Conflict(new { error.Code, error.Description }),
+                "OUTSIDE_RADIUS"     => StatusCode(StatusCodes.Status403Forbidden, new { error.Code, error.Description }),
+                "SELLER_NOT_FOUND"   => NotFound(new { error.Code, error.Description }),
+                "CUSTOMER_NOT_FOUND" => NotFound(new { error.Code, error.Description }),
+                _                    => BadRequest(new { error.Code, error.Description })
             });
     }
 

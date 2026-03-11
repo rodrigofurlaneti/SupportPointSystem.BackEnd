@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FSI.SupportPointSystem.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Reposit髍io base gen閞ico com inje玢o via Primary Constructor.
+/// Reposit贸rio base gen茅rico com inje莽茫o via Primary Constructor.
 /// </summary>
 public abstract class Repository<T>(AppDbContext context) : IRepository<T>
     where T : class
@@ -27,7 +27,7 @@ public abstract class Repository<T>(AppDbContext context) : IRepository<T>
 }
 
 /// <summary>
-/// Reposit髍io de Usu醨ios.
+/// Reposit贸rio de Usu谩rios.
 /// </summary>
 public sealed class UserRepository(AppDbContext context)
     : Repository<User>(context), IUserRepository
@@ -37,10 +37,13 @@ public sealed class UserRepository(AppDbContext context)
 
     public async Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(u => u.Cpf == cpf, cancellationToken);
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await DbSet.AsNoTracking().ToListAsync(cancellationToken);
 }
 
 /// <summary>
-/// Reposit髍io de Vendedores.
+/// Reposit贸rio de Vendedores.
 /// </summary>
 public sealed class SellerRepository(AppDbContext context)
     : Repository<Seller>(context), ISellerRepository
@@ -53,7 +56,7 @@ public sealed class SellerRepository(AppDbContext context)
 }
 
 /// <summary>
-/// Reposit髍io de Clientes.
+/// Reposit贸rio de Clientes.
 /// </summary>
 public sealed class CustomerRepository(AppDbContext context)
     : Repository<Customer>(context), ICustomerRepository
@@ -69,7 +72,7 @@ public sealed class CustomerRepository(AppDbContext context)
 }
 
 /// <summary>
-/// Reposit髍io de Visitas.
+/// Reposit贸rio de Visitas.
 /// </summary>
 public sealed class VisitRepository(AppDbContext context)
     : Repository<Visit>(context), IVisitRepository
@@ -88,6 +91,15 @@ public sealed class VisitRepository(AppDbContext context)
         Guid sellerId, int page, int pageSize, CancellationToken cancellationToken = default) =>
         await DbSet
             .Where(v => v.SellerId == sellerId)
+            .OrderByDescending(v => v.CheckinTimestamp)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Visit>> GetAllAsync(
+        int page, int pageSize, CancellationToken cancellationToken = default) =>
+        await DbSet
             .OrderByDescending(v => v.CheckinTimestamp)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

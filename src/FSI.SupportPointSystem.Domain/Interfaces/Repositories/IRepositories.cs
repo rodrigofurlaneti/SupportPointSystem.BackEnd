@@ -15,6 +15,7 @@ public interface IUserRepository : IRepository<User>
 {
     Task<User?> GetByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken = default);
 }
 
 public interface ISellerRepository : IRepository<Seller>
@@ -43,4 +44,7 @@ public interface IVisitRepository : IRepository<Visit>
         CancellationToken cancellationToken = default);
 
     Task<bool> HasActiveVisitAsync(Guid sellerId, CancellationToken cancellationToken = default);
+
+    /// <summary>Retorna todas as visitas paginadas.</summary>
+    Task<IReadOnlyList<Visit>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 }
