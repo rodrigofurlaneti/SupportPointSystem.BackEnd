@@ -1,15 +1,11 @@
 using FluentValidation;
 using FSI.SupportPointSystem.Application.Common.Results;
+using FSI.SupportPointSystem.Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace FSI.SupportPointSystem.Application.Common.Behaviors;
 
-/// <summary>
-/// Pipeline Behavior do MediatR que intercepta todos os Commands/Queries
-/// e executa a validação via FluentValidation antes de chegar ao Handler.
-/// Retorna Result de falha sem chegar ao Handler se houver erros.
-/// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse>(
     IEnumerable<IValidator<TRequest>> validators,
     ILogger<ValidationBehavior<TRequest, TResponse>> logger)
@@ -37,14 +33,10 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
         logger.LogWarning("Falha de validação para {RequestType}: {@Errors}",
             typeof(TRequest).Name, failures.Select(f => f.ErrorMessage));
 
-        // Compatível com Result<T> - lança exceção de validação para ser tratada no middleware
         throw new ValidationException(failures);
     }
 }
 
-/// <summary>
-/// Pipeline Behavior para logging de performance e diagnóstico.
-/// </summary>
 public sealed class LoggingBehavior<TRequest, TResponse>(
     ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
@@ -56,29 +48,26 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
-        logger.LogInformation("Iniciando {RequestName}", requestName);
+        logger.LogInformation(" [MÉTODO INICIADO] {RequestName}", requestName);
 
         var startTime = DateTime.UtcNow;
         try
         {
             var response = await next();
             var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
-            logger.LogInformation("Concluído {RequestName} em {Elapsed}ms", requestName, elapsed);
+            logger.LogInformation(" [MÉTODO SUCESSO] {RequestName} em {Elapsed}ms", requestName, elapsed);
             return response;
         }
         catch (Exception ex)
         {
             var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
-            logger.LogError(ex, "Erro em {RequestName} após {Elapsed}ms", requestName, elapsed);
+            logger.LogCritical(" [ERRO CRÍTICO] Falha na execução de {RequestName} após {Elapsed}ms", requestName, elapsed);
+            logger.LogError("MENSAGEM: {Message}", ex.Message);
             throw;
         }
     }
 }
 
-/// <summary>
-/// Pipeline Behavior para dispatch de Domain Events após commit.
-/// Garante que eventos só são publicados após persistência bem-sucedida.
-/// </summary>
 public sealed class DomainEventDispatchBehavior<TRequest, TResponse>(
     IDomainEventCollector eventCollector,
     IPublisher publisher)

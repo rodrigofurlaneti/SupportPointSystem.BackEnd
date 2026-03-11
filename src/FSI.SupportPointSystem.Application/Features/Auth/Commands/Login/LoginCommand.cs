@@ -4,6 +4,7 @@ using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
 using FSI.SupportPointSystem.Domain.Interfaces.Services;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace FSI.SupportPointSystem.Application.Features.Auth.Commands.Login;
 
@@ -61,6 +62,16 @@ public sealed class LoginCommandHandler(
             return Result<LoginResponse>.Failure(Error.Unauthorized);
 
         // 3. Verificar senha
+        // LOG DE DIAGNÓSTICO (Insira antes do if da senha)
+        Console.WriteLine($"[DEBUG] Senha Digitada: '{request.Password}'");
+        Console.WriteLine($"[DEBUG] Tamanho Senha: {request.Password.Length}");
+        Console.WriteLine($"[DEBUG] Hash no Banco: '{user.PasswordHash}'");
+        Console.WriteLine($"[DEBUG] Tamanho Hash: {user.PasswordHash.Length}");
+
+        // Teste de sanidade: gerar um hash na hora e comparar
+        var hashLocal = passwordHasher.Hash(request.Password);
+        Console.WriteLine($"[DEBUG] Hash gerado agora: {hashLocal}");
+        Console.WriteLine($"[DEBUG] Verify Local: {passwordHasher.Verify(request.Password, hashLocal)}");
         if (!passwordHasher.Verify(request.Password, user.PasswordHash))
             return Result<LoginResponse>.Failure(Error.Unauthorized);
 

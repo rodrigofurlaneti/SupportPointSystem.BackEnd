@@ -12,14 +12,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
         builder.HasKey(u => u.Id);
 
-        builder.OwnsOne(u => u.Cpf, cpf =>
-        {
-            cpf.Property(c => c.Value)
-                .HasColumnName("Cpf")
-                .HasMaxLength(11)
-                .IsRequired();
-            cpf.HasIndex(c => c.Value).IsUnique();
-        });
+        builder.Property(u => u.Cpf)
+            .HasConversion(
+                v => v.Value,
+                v => Cpf.Create(v))
+            .HasColumnName("Cpf")
+            .HasMaxLength(11)
+            .IsRequired();
+
+        builder.HasIndex(u => u.Cpf).IsUnique();
 
         builder.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
 
@@ -31,7 +32,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt);
 
-        builder.HasOne<Seller>()
+        builder.HasOne<Seller>() 
             .WithOne(s => s.User)
             .HasForeignKey<Seller>(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
@@ -64,14 +65,13 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.CompanyName).HasMaxLength(150).IsRequired();
         builder.Property(c => c.IsActive).IsRequired();
 
-        builder.OwnsOne(c => c.Cnpj, cnpj =>
-        {
-            cnpj.Property(x => x.Value)
-                .HasColumnName("Cnpj")
-                .HasMaxLength(14)
-                .IsRequired();
-            cnpj.HasIndex(x => x.Value).IsUnique();
-        });
+        builder.Property(c => c.Cnpj)
+            .HasConversion(
+                v => v.Value,
+                v => Cnpj.Create(v))
+            .HasColumnName("Cnpj")
+            .HasMaxLength(14)
+            .IsRequired();
 
         builder.OwnsOne(c => c.LocationTarget, coords =>
         {
@@ -94,7 +94,7 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
 {
     public void Configure(EntityTypeBuilder<Visit> builder)
     {
-        builder.ToTable("Visits");
+        builder.ToTable("Checkins");
         builder.HasKey(v => v.Id);
 
         builder.Property(v => v.SellerId).IsRequired();
@@ -104,7 +104,6 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
         builder.Property(v => v.DurationMinutes);
         builder.Property(v => v.CheckoutSummary).HasMaxLength(500);
 
-        // Check-in location (owned type)
         builder.OwnsOne(v => v.CheckinLocation, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -117,7 +116,6 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
                 .IsRequired();
         });
 
-        // Checkout location (nullable owned type)
         builder.OwnsOne(v => v.CheckoutLocation, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -128,8 +126,9 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
                 .HasPrecision(12, 9);
         });
 
+        // CORREÇÃO PARA MYSQL: Filtros de índice não usam colchetes []
         builder.HasIndex(v => new { v.SellerId, v.CheckoutTimestamp })
-            .HasFilter("[CheckoutTimestamp] IS NULL")
+            .HasFilter("`CheckoutTimestamp` IS NULL")
             .HasDatabaseName("IX_Visits_Seller_ActiveOnly");
 
         builder.HasOne<Seller>()

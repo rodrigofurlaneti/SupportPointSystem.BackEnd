@@ -1,10 +1,14 @@
 using FSI.SupportPointSystem.Domain.Entities;
 using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
 using FSI.SupportPointSystem.Domain.ValueObjects;
+using FSI.SupportPointSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace FSI.SupportPointSystem.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// Repositório base genérico com injeção via Primary Constructor.
+/// </summary>
 public abstract class Repository<T>(AppDbContext context) : IRepository<T>
     where T : class
 {
@@ -22,16 +26,22 @@ public abstract class Repository<T>(AppDbContext context) : IRepository<T>
     public void Remove(T entity) => DbSet.Remove(entity);
 }
 
+/// <summary>
+/// Repositório de Usuários.
+/// </summary>
 public sealed class UserRepository(AppDbContext context)
     : Repository<User>(context), IUserRepository
 {
-    public async Task<User?> GetByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default) =>
-        await DbSet.FirstOrDefaultAsync(u => u.Cpf.Value == cpf.Value, cancellationToken);
+    public async Task<User?> GetByCpfAsync(Cpf cpf, CancellationToken cancellationToken) =>
+        await DbSet.FirstOrDefaultAsync(u => u.Cpf == cpf, cancellationToken);
 
     public async Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default) =>
-        await DbSet.AnyAsync(u => u.Cpf.Value == cpf.Value, cancellationToken);
+        await DbSet.AnyAsync(u => u.Cpf == cpf, cancellationToken);
 }
 
+/// <summary>
+/// Repositório de Vendedores.
+/// </summary>
 public sealed class SellerRepository(AppDbContext context)
     : Repository<Seller>(context), ISellerRepository
 {
@@ -42,19 +52,25 @@ public sealed class SellerRepository(AppDbContext context)
         await DbSet.Where(s => s.IsActive).AsNoTracking().ToListAsync(cancellationToken);
 }
 
+/// <summary>
+/// Repositório de Clientes.
+/// </summary>
 public sealed class CustomerRepository(AppDbContext context)
     : Repository<Customer>(context), ICustomerRepository
 {
     public async Task<Customer?> GetByCnpjAsync(Cnpj cnpj, CancellationToken cancellationToken = default) =>
-        await DbSet.FirstOrDefaultAsync(c => c.Cnpj.Value == cnpj.Value, cancellationToken);
+        await DbSet.FirstOrDefaultAsync(c => c.Cnpj == cnpj, cancellationToken);
 
     public async Task<bool> ExistsByCnpjAsync(Cnpj cnpj, CancellationToken cancellationToken = default) =>
-        await DbSet.AnyAsync(c => c.Cnpj.Value == cnpj.Value, cancellationToken);
+        await DbSet.AnyAsync(c => c.Cnpj == cnpj, cancellationToken);
 
     public async Task<IReadOnlyList<Customer>> GetAllActiveAsync(CancellationToken cancellationToken = default) =>
         await DbSet.Where(c => c.IsActive).AsNoTracking().ToListAsync(cancellationToken);
 }
 
+/// <summary>
+/// Repositório de Visitas.
+/// </summary>
 public sealed class VisitRepository(AppDbContext context)
     : Repository<Visit>(context), IVisitRepository
 {

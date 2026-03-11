@@ -17,11 +17,15 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // EF Core - SQL Server
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                sql => sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
-                          .EnableRetryOnFailure(maxRetryCount: 3)));
+            options.UseMySql(
+                connectionString,
+                ServerVersion.AutoDetect(connectionString), // Essencial para o Pomelo MySQL
+                mysqlOptions => mysqlOptions
+                    .MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
+                    .EnableRetryOnFailure(maxRetryCount: 3)));
 
         // Repositórios
         services.AddScoped<IUserRepository, UserRepository>();
