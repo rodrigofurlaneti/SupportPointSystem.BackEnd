@@ -73,6 +73,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasMaxLength(14)
             .IsRequired();
 
+        // Mapeamento das Coordenadas (já existente)
         builder.OwnsOne(c => c.LocationTarget, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -84,6 +85,39 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
                 .HasPrecision(12, 9)
                 .IsRequired();
         });
+
+        // --- NOVO: Mapeamento do Value Object Address ---
+        builder.OwnsOne(c => c.Address, addr =>
+        {
+            addr.Property(a => a.Street)
+                .HasColumnName("Address_Street")
+                .HasMaxLength(200);
+
+            addr.Property(a => a.Number)
+                .HasColumnName("Address_Number")
+                .HasMaxLength(20);
+
+            addr.Property(a => a.Complement)
+                .HasColumnName("Address_Complement")
+                .HasMaxLength(100);
+
+            addr.Property(a => a.Neighborhood)
+                .HasColumnName("Address_Neighborhood")
+                .HasMaxLength(100);
+
+            addr.Property(a => a.City)
+                .HasColumnName("Address_City")
+                .HasMaxLength(100);
+
+            addr.Property(a => a.State)
+                .HasColumnName("Address_State")
+                .HasMaxLength(2);
+
+            addr.Property(a => a.ZipCode)
+                .HasColumnName("Address_ZipCode")
+                .HasMaxLength(8);
+        });
+        // ------------------------------------------------
 
         builder.Property(c => c.CreatedAt).IsRequired();
         builder.Property(c => c.UpdatedAt);

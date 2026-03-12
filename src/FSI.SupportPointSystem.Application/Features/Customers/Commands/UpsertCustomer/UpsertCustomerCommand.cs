@@ -5,6 +5,7 @@ using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
 using FSI.SupportPointSystem.Domain.Interfaces.Services;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 using MediatR;
+using System.Globalization;
 
 namespace FSI.SupportPointSystem.Application.Features.Customers.Commands.UpsertCustomer;
 
@@ -49,6 +50,7 @@ public sealed class UpsertCustomerCommandValidator : AbstractValidator<UpsertCus
 
 public sealed class UpsertCustomerCommandHandler(
     ICustomerRepository customerRepository,
+    IGeocodingService geocodingService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpsertCustomerCommand, Result<UpsertCustomerResponse>>
 {
@@ -61,10 +63,18 @@ public sealed class UpsertCustomerCommandHandler(
         {
             cnpj = Cnpj.Create(request.Cnpj);
         }
-        catch (Domain.Exceptions.DomainValidationException ex)
+        catch (FSI.SupportPointSystem.Domain.Exceptions.DomainValidationException ex)
         {
             return Result<UpsertCustomerResponse>.Failure(Error.Custom("INVALID_CNPJ", ex.Message));
         }
+
+        // --- ENRIQUECIMENTO DE DADOS (GEOCÔDIGO) ---
+        var latStr = request.Latitude.ToString(CultureInfo.InvariantCulture);
+        var lonStr = request.Longitude.ToString(CultureInfo.InvariantCulture);
+
+        // O serviço agora retorna o Value Object 'Address' do seu domínio
+        var addressVO = await geocodingService.ObterEnderecoPorCoordenadasAsync(latStr, lonStr);
+        // -------------------------------------------
 
         var existing = await customerRepository.GetByCnpjAsync(cnpj, cancellationToken);
         bool isNew;
@@ -74,7 +84,8 @@ public sealed class UpsertCustomerCommandHandler(
         {
             // Atualizar cliente existente
             existing.UpdateCompanyName(request.CompanyName);
-            existing.UpdateLocation(request.Latitude, request.Longitude);
+            // Passamos o addressVO (Value Object) diretamente
+            existing.UpdateLocation(request.Latitude, request.Longitude, addressVO);
             customerRepository.Update(existing);
             customer = existing;
             isNew = false;
@@ -84,9 +95,14 @@ public sealed class UpsertCustomerCommandHandler(
             // Criar novo cliente
             try
             {
-                customer = Customer.Create(request.CompanyName, request.Cnpj, request.Latitude, request.Longitude);
+                customer = Customer.Create(
+                    request.CompanyName,
+                    request.Cnpj,
+                    request.Latitude,
+                    request.Longitude,
+                    addressVO); // Corrigido: usando addressVO em vez de enderecoFormatado
             }
-            catch (Domain.Exceptions.DomainValidationException ex)
+            catch (FSI.SupportPointSystem.Domain.Exceptions.DomainValidationException ex)
             {
                 return Result<UpsertCustomerResponse>.Failure(Error.Custom("DOMAIN_VALIDATION", ex.Message));
             }

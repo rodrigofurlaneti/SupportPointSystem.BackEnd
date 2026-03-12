@@ -16,19 +16,21 @@ public sealed class Customer : Entity
     public string CompanyName { get; private set; } = null!;
     public Cnpj Cnpj { get; private set; } = null!;
     public Coordinates LocationTarget { get; private set; } = null!;
+    public Address? Address { get; private set; }
     public bool IsActive { get; private set; }
 
     private Customer() { } // EF Core
 
-    private Customer(string companyName, Cnpj cnpj, Coordinates locationTarget)
+    private Customer(string companyName, Cnpj cnpj, Coordinates locationTarget, Address? address)
     {
         CompanyName = companyName;
         Cnpj = cnpj;
         LocationTarget = locationTarget;
+        Address = address;
         IsActive = true;
     }
 
-    public static Customer Create(string companyName, string rawCnpj, decimal latitude, decimal longitude)
+    public static Customer Create(string companyName, string rawCnpj, decimal latitude, decimal longitude, Address? address = null)
     {
         if (string.IsNullOrWhiteSpace(companyName))
             throw new DomainValidationException("Razão social é obrigatória.");
@@ -36,7 +38,7 @@ public sealed class Customer : Entity
         var cnpj = Cnpj.Create(rawCnpj);
         var coordinates = Coordinates.Create(latitude, longitude);
 
-        var customer = new Customer(companyName, cnpj, coordinates);
+        var customer = new Customer(companyName, cnpj, coordinates, address);
 
         customer.RaiseDomainEvent(new CustomerUpsertedDomainEvent(
             EventId: Guid.NewGuid(),
@@ -49,10 +51,11 @@ public sealed class Customer : Entity
         return customer;
     }
 
-    public void UpdateLocation(decimal latitude, decimal longitude)
+    public void UpdateLocation(decimal latitude, decimal longitude, Address? address = null)
     {
         LocationTarget = Coordinates.Create(latitude, longitude);
-        UpdatedAt = DateTime.UtcNow;
+        Address = address; 
+        UpdatedAt = DateTime.Now;
     }
 
     public void UpdateCompanyName(string companyName)
@@ -61,7 +64,7 @@ public sealed class Customer : Entity
             throw new DomainValidationException("Razão social é obrigatória.");
 
         CompanyName = companyName;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.Now;
     }
 
     /// <summary>Verifica se as coordenadas fornecidas estão dentro do raio de check-in.</summary>

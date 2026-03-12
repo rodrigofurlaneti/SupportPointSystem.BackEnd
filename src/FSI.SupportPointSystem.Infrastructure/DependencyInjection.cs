@@ -4,6 +4,7 @@ using FSI.SupportPointSystem.Domain.Interfaces.Services;
 using FSI.SupportPointSystem.Infrastructure.Persistence;
 using FSI.SupportPointSystem.Infrastructure.Persistence.Repositories;
 using FSI.SupportPointSystem.Infrastructure.Services;
+using FSI.SupportPointSystem.Infrastructure.Services.Nominatim; // Adicione este using
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,16 +17,21 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // EF Core - SQL Server
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(
-                connectionString,
-                ServerVersion.AutoDetect(connectionString), // Essencial para o Pomelo MySQL
-                mysqlOptions => mysqlOptions
-                    .MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
-                    .EnableRetryOnFailure(maxRetryCount: 3)));
+        {
+            // Verificação para evitar erro no CLI quando a string está vazia
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                options.UseMySql(
+                    connectionString,
+                    ServerVersion.AutoDetect(connectionString),
+                    mysqlOptions => mysqlOptions
+                        .MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
+                        .EnableRetryOnFailure(maxRetryCount: 3));
+            }
+        });
 
         // Repositórios
         services.AddScoped<IUserRepository, UserRepository>();
@@ -33,15 +39,20 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IVisitRepository, VisitRepository>();
 
-        // Unit of Work
+        // Unit of Work e Collector
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-        // Domain Event Collector (para o behavior do MediatR)
         services.AddScoped<IDomainEventCollector, EfDomainEventCollector>();
 
         // Serviços de domínio / infraestrutura
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
+
+        // --- NOVO: Registro do Nominatim com HttpClient ---
+        services.AddHttpClient<IGeocodingService, NominatimService>(client =>
+        {
+            client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+            client.DefaultRequestHeaders.Add("User-Agent", "FSI.SupportPointSystem.Api");
+        });
 
         return services;
     }
