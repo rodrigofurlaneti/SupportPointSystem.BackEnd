@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Api.Middleware;
+﻿using FSI.SupportPointSystem.Api.Middleware;
 using FSI.SupportPointSystem.Application;
 using FSI.SupportPointSystem.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,33 +8,13 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Configuração do Servidor (Kestrel) ---
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8080); // Mantém a porta 8080 para HTTP
-    options.ListenAnyIP(443, listenOptions =>
-    {
-        var certPath = builder.Configuration["Kestrel:Certificates:Default:Path"];
-        var certPassword = builder.Configuration["Kestrel:Certificates:Default:Password"];
-
-        if (!string.IsNullOrEmpty(certPath) && System.IO.File.Exists(certPath))
-        {
-            listenOptions.UseHttps(certPath, certPassword); // Usa certificado configurado
-        }
-        else
-        {
-            listenOptions.UseHttps(); // Certificado padrão de dev
-        }
-    });
-});
-
 // Configuração de CORS com a sua política WebAppPolicy
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("WebAppPolicy", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.AllowAnyOrigin() 
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
