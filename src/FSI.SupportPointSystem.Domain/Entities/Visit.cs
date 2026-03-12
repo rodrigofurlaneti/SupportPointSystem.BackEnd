@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Domain.Common;
+﻿using FSI.SupportPointSystem.Domain.Common;
 using FSI.SupportPointSystem.Domain.Events;
 using FSI.SupportPointSystem.Domain.Exceptions;
 using FSI.SupportPointSystem.Domain.ValueObjects;
@@ -12,7 +12,8 @@ public sealed class Visit : Entity
 {
     public Guid SellerId { get; private set; }
     public Guid CustomerId { get; private set; }
-
+    public Seller Seller { get; private set; } = null!;
+    public Customer Customer { get; private set; } = null!;
     // Check-in
     public Coordinates CheckinLocation { get; private set; } = null!; // Ajustado para null! para o compilador
     public DateTime CheckinTimestamp { get; private set; }

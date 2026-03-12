@@ -1,7 +1,9 @@
-using FSI.SupportPointSystem.Domain.Entities;
+ï»¿using FSI.SupportPointSystem.Domain.Entities;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System;
+using System.Numerics;
 
 namespace FSI.SupportPointSystem.Infrastructure.Persistence.Configurations;
 
@@ -73,7 +75,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasMaxLength(14)
             .IsRequired();
 
-        // Mapeamento das Coordenadas (já existente)
+        // Mapeamento das Coordenadas (jÃ¡ existente)
         builder.OwnsOne(c => c.LocationTarget, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -130,14 +132,12 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
     {
         builder.ToTable("Checkins");
         builder.HasKey(v => v.Id);
-
         builder.Property(v => v.SellerId).IsRequired();
         builder.Property(v => v.CustomerId).IsRequired();
         builder.Property(v => v.CheckinDistanceMeters).IsRequired();
         builder.Property(v => v.CheckinTimestamp).IsRequired();
         builder.Property(v => v.DurationMinutes);
         builder.Property(v => v.CheckoutSummary).HasMaxLength(500);
-
         builder.OwnsOne(v => v.CheckinLocation, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -149,7 +149,6 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
                 .HasPrecision(12, 9)
                 .IsRequired();
         });
-
         builder.OwnsOne(v => v.CheckoutLocation, coords =>
         {
             coords.Property(x => x.Latitude)
@@ -159,22 +158,18 @@ public sealed class VisitConfiguration : IEntityTypeConfiguration<Visit>
                 .HasColumnName("CheckoutLongitude")
                 .HasPrecision(12, 9);
         });
-
-        // CORREÇÃO PARA MYSQL: Filtros de índice não usam colchetes []
-        builder.HasIndex(v => new { v.SellerId, v.CheckoutTimestamp })
-            .HasFilter("`CheckoutTimestamp` IS NULL")
-            .HasDatabaseName("IX_Visits_Seller_ActiveOnly");
-
-        builder.HasOne<Seller>()
+        builder.HasOne(v => v.Seller)
             .WithMany()
             .HasForeignKey(v => v.SellerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne<Customer>()
+        builder.HasOne(v => v.Customer)
             .WithMany()
             .HasForeignKey(v => v.CustomerId)
             .OnDelete(DeleteBehavior.Restrict);
-
+        builder.HasIndex(v => new { v.SellerId, v.CheckoutTimestamp })
+            .HasFilter("`CheckoutTimestamp` IS NULL")
+            .HasDatabaseName("IX_Visits_Seller_ActiveOnly");
         builder.Property(v => v.CreatedAt).IsRequired();
         builder.Property(v => v.UpdatedAt);
     }

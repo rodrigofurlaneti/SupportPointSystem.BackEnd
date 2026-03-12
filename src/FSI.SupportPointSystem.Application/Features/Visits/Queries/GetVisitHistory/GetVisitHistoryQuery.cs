@@ -9,6 +9,8 @@ namespace FSI.SupportPointSystem.Application.Features.Visits.Queries.GetVisitHis
 public sealed record VisitSummaryDto(
     Guid VisitId,
     Guid CustomerId,
+    string CustomerName,
+    string SellerName, 
     decimal CheckinLatitude,
     decimal CheckinLongitude,
     double CheckinDistanceMeters,
@@ -21,7 +23,7 @@ public sealed record VisitSummaryDto(
 );
 
 public sealed record GetVisitHistoryQuery(
-    Guid? SellerId, // Tornar opcional
+    Guid? SellerId,
     int Page = 1,
     int PageSize = 20
 ) : IRequest<Result<IReadOnlyList<VisitSummaryDto>>>;
@@ -54,6 +56,8 @@ public sealed class GetVisitHistoryQueryHandler(IVisitRepository visitRepository
     private static VisitSummaryDto MapToDto(Visit v) => new(
             VisitId: v.Id,
             CustomerId: v.CustomerId,
+            CustomerName: v.Customer?.CompanyName ?? "Cliente Desconhecido",
+            SellerName: v.Seller?.Name ?? "Vendedor Desconhecido",
             CheckinLatitude: v.CheckinLocation.Latitude,
             CheckinLongitude: v.CheckinLocation.Longitude,
             CheckinDistanceMeters: v.CheckinDistanceMeters,

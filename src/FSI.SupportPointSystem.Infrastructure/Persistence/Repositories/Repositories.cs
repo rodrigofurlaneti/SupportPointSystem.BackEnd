@@ -97,10 +97,6 @@ public sealed class VisitRepository(AppDbContext context)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-    /// <summary>
-    /// Método unificado para histórico. 
-    /// Se sellerId for null, retorna de todos (Admin). Se tiver valor, filtra (Seller).
-    /// </summary>
     public async Task<IReadOnlyList<Visit>> GetVisitHistoryAsync(
         Guid? sellerId,
         int page,
@@ -109,7 +105,10 @@ public sealed class VisitRepository(AppDbContext context)
     {
         IQueryable<Visit> query = DbSet;
 
-        // Aplica o filtro condicionalmente
+        query = query
+            .Include(v => v.Customer)
+            .Include(v => v.Seller); 
+
         if (sellerId.HasValue && sellerId.Value != Guid.Empty)
         {
             query = query.Where(v => v.SellerId == sellerId.Value);
@@ -119,7 +118,7 @@ public sealed class VisitRepository(AppDbContext context)
             .OrderByDescending(v => v.CheckinTimestamp)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .AsNoTracking() // Importante para performance em listagens
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
