@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FSI.SupportPointSystem.Application.Common.Results;
 using FSI.SupportPointSystem.Domain.Entities;
 using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
@@ -21,7 +21,7 @@ public sealed record VisitSummaryDto(
 );
 
 public sealed record GetVisitHistoryQuery(
-    Guid SellerId,
+    Guid? SellerId, // Tornar opcional
     int Page = 1,
     int PageSize = 20
 ) : IRequest<Result<IReadOnlyList<VisitSummaryDto>>>;
@@ -30,7 +30,6 @@ public sealed class GetVisitHistoryQueryValidator : AbstractValidator<GetVisitHi
 {
     public GetVisitHistoryQueryValidator()
     {
-        RuleFor(x => x.SellerId).NotEmpty();
         RuleFor(x => x.Page).GreaterThan(0);
         RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
     }
@@ -43,7 +42,7 @@ public sealed class GetVisitHistoryQueryHandler(IVisitRepository visitRepository
         GetVisitHistoryQuery request,
         CancellationToken cancellationToken)
     {
-        var visits = await visitRepository.GetVisitHistoryBySellerIdAsync(
+        var visits = await visitRepository.GetVisitHistoryAsync(
             request.SellerId,
             request.Page,
             request.PageSize,
@@ -52,18 +51,17 @@ public sealed class GetVisitHistoryQueryHandler(IVisitRepository visitRepository
         var dtos = visits.Select(MapToDto).ToList().AsReadOnly();
         return Result<IReadOnlyList<VisitSummaryDto>>.Success(dtos);
     }
-
     private static VisitSummaryDto MapToDto(Visit v) => new(
-        VisitId: v.Id,
-        CustomerId: v.CustomerId,
-        CheckinLatitude: v.CheckinLocation.Latitude,
-        CheckinLongitude: v.CheckinLocation.Longitude,
-        CheckinDistanceMeters: v.CheckinDistanceMeters,
-        CheckinTimestamp: v.CheckinTimestamp,
-        IsOpen: v.IsOpen,
-        CheckoutTimestamp: v.CheckoutTimestamp,
-        CheckoutDistanceMeters: v.CheckoutDistanceMeters,
-        DurationMinutes: v.DurationMinutes,
-        CheckoutSummary: v.CheckoutSummary
-    );
+            VisitId: v.Id,
+            CustomerId: v.CustomerId,
+            CheckinLatitude: v.CheckinLocation.Latitude,
+            CheckinLongitude: v.CheckinLocation.Longitude,
+            CheckinDistanceMeters: v.CheckinDistanceMeters,
+            CheckinTimestamp: v.CheckinTimestamp,
+            IsOpen: v.IsOpen,
+            CheckoutTimestamp: v.CheckoutTimestamp,
+            CheckoutDistanceMeters: v.CheckoutDistanceMeters,
+            DurationMinutes: v.DurationMinutes,
+            CheckoutSummary: v.CheckoutSummary
+        );
 }

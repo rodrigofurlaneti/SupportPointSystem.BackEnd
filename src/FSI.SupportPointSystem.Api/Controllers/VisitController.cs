@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Application.Features.Visits.Commands.RegisterCheckin;
+﻿using FSI.SupportPointSystem.Application.Features.Visits.Commands.RegisterCheckin;
 using FSI.SupportPointSystem.Application.Features.Visits.Commands.RegisterCheckout;
 using FSI.SupportPointSystem.Application.Features.Visits.Queries.GetAllVisits;
 using FSI.SupportPointSystem.Application.Features.Visits.Queries.GetVisitById;
@@ -123,21 +123,42 @@ public sealed class VisitController(ISender sender) : ControllerBase
     }
 
     /// <summary>Retorna o histórico paginado de visitas do vendedor autenticado.</summary>
+    /// <summary>
+    /// Retorna o histórico paginado. 
+    /// SELLER: Vê apenas o seu. 
+    /// ADMIN: Vê de todos ou filtra por um vendedor específico.
+    /// </summary>
     [HttpGet("history")]
     [Authorize(Roles = "SELLER,ADMIN")]
     [ProducesResponseType(typeof(IReadOnlyList<VisitSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetHistory(
+        [FromQuery] Guid? sellerId, // Novo: permite passar o ID via query string
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var sellerId = GetSellerId();
-        if (sellerId is null) return Unauthorized();
+        Guid? targetId;
 
-        var query = new GetVisitHistoryQuery(sellerId.Value, page, pageSize);
+        if (User.IsInRole("ADMIN"))
+        {
+            // Se for Admin, usa o ID passado no front ou null para pegar todos
+            targetId = sellerId;
+        }
+        else
+        {
+            // Se for Seller, ignora o que veio do front e força o ID do próprio token (Segurança)
+            targetId = GetSellerId();
+            if (targetId is null) return Unauthorized(new { Code = "AUTH_ERROR", Description = "SellerId não encontrado no token." });
+        }
+
+        // Ajuste sua GetVisitHistoryQuery para aceitar Guid? (opcional) 
+        // ou garanta que o Handler trate o Guid.Empty / Null como "trazer todos"
+        var query = new GetVisitHistoryQuery(targetId, page, pageSize);
         var result = await sender.Send(query, cancellationToken);
 
-        return result.Match<IActionResult>(Ok, error => BadRequest(new { error.Code, error.Description }));
+        return result.Match<IActionResult>(
+            onSuccess: Ok,
+            onFailure: error => BadRequest(new { error.Code, error.Description }));
     }
 
     private Guid? GetSellerId()

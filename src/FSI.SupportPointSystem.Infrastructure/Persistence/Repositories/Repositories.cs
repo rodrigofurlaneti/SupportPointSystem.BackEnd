@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Domain.Entities;
+﻿using FSI.SupportPointSystem.Domain.Entities;
 using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 using FSI.SupportPointSystem.Infrastructure.Persistence;
@@ -96,6 +96,32 @@ public sealed class VisitRepository(AppDbContext context)
             .Take(pageSize)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// Método unificado para histórico. 
+    /// Se sellerId for null, retorna de todos (Admin). Se tiver valor, filtra (Seller).
+    /// </summary>
+    public async Task<IReadOnlyList<Visit>> GetVisitHistoryAsync(
+        Guid? sellerId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<Visit> query = DbSet;
+
+        // Aplica o filtro condicionalmente
+        if (sellerId.HasValue && sellerId.Value != Guid.Empty)
+        {
+            query = query.Where(v => v.SellerId == sellerId.Value);
+        }
+
+        return await query
+            .OrderByDescending(v => v.CheckinTimestamp)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking() // Importante para performance em listagens
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<Visit>> GetAllAsync(
         int page, int pageSize, CancellationToken cancellationToken = default) =>

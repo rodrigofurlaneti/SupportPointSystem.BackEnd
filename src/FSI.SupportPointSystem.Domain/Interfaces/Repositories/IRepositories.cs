@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Domain.Entities;
+﻿using FSI.SupportPointSystem.Domain.Entities;
 using FSI.SupportPointSystem.Domain.ValueObjects;
 
 namespace FSI.SupportPointSystem.Domain.Interfaces.Repositories;
@@ -35,7 +35,7 @@ public interface IVisitRepository : IRepository<Visit>
 {
     /// <summary>Retorna a visita aberta de um vendedor, ou null se não existir.</summary>
     Task<Visit?> GetActiveVisitBySellerIdAsync(Guid sellerId, CancellationToken cancellationToken = default);
-
+    Task<IReadOnlyList<Visit>> GetVisitHistoryAsync(Guid? sellerId, int page, int pageSize, CancellationToken ct);
     /// <summary>Retorna o histórico de visitas de um vendedor paginado.</summary>
     Task<IReadOnlyList<Visit>> GetVisitHistoryBySellerIdAsync(
         Guid sellerId,
