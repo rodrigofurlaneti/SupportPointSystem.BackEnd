@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Application.Features.Customers.Commands.DeleteCustomer;
+﻿using FSI.SupportPointSystem.Application.Features.Customers.Commands.DeleteCustomer;
 using FSI.SupportPointSystem.Application.Features.Customers.Commands.UpsertCustomer;
 using FSI.SupportPointSystem.Application.Features.Customers.Queries.GetAllCustomers;
 using FSI.SupportPointSystem.Application.Features.Customers.Queries.GetCustomerById;
@@ -117,14 +117,15 @@ public sealed record UpdateSellerRequest(string Name, string? Phone, string? Ema
 // ============================================================
 // CustomerController - CRUD completo via CQRS
 // ============================================================
-/// <summary>Gestão de clientes - apenas ADMIN.</summary>
+/// <summary>Gestão de clientes - Acesso ADMIN e SELLER (limitado).</summary>
 [ApiController]
 [Route("api/customers")]
-[Authorize(Roles = "ADMIN")]
+[Authorize(Roles = "ADMIN")] // Padrão para a controller toda é ADMIN
 public sealed class CustomerController(ISender sender) : ControllerBase
 {
-    /// <summary>Retorna todos os clientes ativos.</summary>
+    /// <summary>Retorna todos os clientes ativos - Aberto para ADMIN e SELLER.</summary>
     [HttpGet]
+    [Authorize(Roles = "ADMIN,SELLER")] // Sobrescreve permitindo ambas as roles
     [ProducesResponseType(typeof(IReadOnlyList<CustomerResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -135,8 +136,9 @@ public sealed class CustomerController(ISender sender) : ControllerBase
             onFailure: error => BadRequest(new { error.Code, error.Description }));
     }
 
-    /// <summary>Retorna um cliente pelo Id.</summary>
+    /// <summary>Retorna um cliente pelo Id - Aberto para ADMIN e SELLER.</summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "ADMIN,SELLER")] // Sobrescreve permitindo ambas as roles
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -150,7 +152,7 @@ public sealed class CustomerController(ISender sender) : ControllerBase
                 : BadRequest(new { error.Code, error.Description }));
     }
 
-    /// <summary>Cria ou atualiza um cliente pelo CNPJ (upsert). Retorna 201 se novo, 200 se atualizado.</summary>
+    /// <summary>Cria ou atualiza um cliente - Apenas ADMIN (conforme o atributo da classe).</summary>
     [HttpPost]
     [ProducesResponseType(typeof(UpsertCustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(UpsertCustomerResponse), StatusCodes.Status200OK)]
@@ -168,7 +170,7 @@ public sealed class CustomerController(ISender sender) : ControllerBase
             onFailure: error => BadRequest(new { error.Code, error.Description }));
     }
 
-    /// <summary>Remove um cliente pelo Id.</summary>
+    /// <summary>Remove um cliente - Apenas ADMIN.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(typeof(DeleteCustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
