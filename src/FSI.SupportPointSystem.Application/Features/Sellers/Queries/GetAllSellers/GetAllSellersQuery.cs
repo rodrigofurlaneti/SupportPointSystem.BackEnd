@@ -1,4 +1,4 @@
-using FSI.SupportPointSystem.Application.Common.Results;
+﻿using FSI.SupportPointSystem.Application.Common.Results;
 using FSI.SupportPointSystem.Application.Features.Sellers.Queries.GetSellerById;
 using FSI.SupportPointSystem.Domain.Interfaces.Repositories;
 using MediatR;
@@ -31,6 +31,7 @@ public sealed class GetAllSellersQueryHandler(ISellerRepository sellerRepository
                 SellerId: s.Id,
                 UserId: s.UserId,
                 Name: s.Name,
+                Cpf: s.User?.Cpf?.Value ?? string.Empty, // <--- Agora o argumento Cpf é passado aqui
                 Phone: s.Phone,
                 Email: s.Email,
                 IsActive: s.IsActive,

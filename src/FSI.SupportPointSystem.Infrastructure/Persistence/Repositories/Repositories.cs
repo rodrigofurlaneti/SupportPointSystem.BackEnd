@@ -51,8 +51,14 @@ public sealed class SellerRepository(AppDbContext context)
     public async Task<Seller?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
         await DbSet.FirstOrDefaultAsync(s => s.UserId == userId, cancellationToken);
 
-    public async Task<IReadOnlyList<Seller>> GetAllActiveAsync(CancellationToken cancellationToken = default) =>
-        await DbSet.Where(s => s.IsActive).AsNoTracking().ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<Seller>> GetAllActiveAsync(CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Include(s => s.User) 
+            .Where(s => s.IsActive)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }
 
 /// <summary>
