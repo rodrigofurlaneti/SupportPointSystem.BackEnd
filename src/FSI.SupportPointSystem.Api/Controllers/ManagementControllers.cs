@@ -120,7 +120,6 @@ public sealed record UpdateSellerRequest(string Name, string? Phone, string? Ema
 /// <summary>Gestão de clientes - Acesso ADMIN e SELLER (limitado).</summary>
 [ApiController]
 [Route("api/customers")]
-[Authorize(Roles = "ADMIN")] // Padrão para a controller toda é ADMIN
 public sealed class CustomerController(ISender sender) : ControllerBase
 {
     /// <summary>Retorna todos os clientes ativos - Aberto para ADMIN e SELLER.</summary>
@@ -154,6 +153,7 @@ public sealed class CustomerController(ISender sender) : ControllerBase
 
     /// <summary>Cria ou atualiza um cliente - Apenas ADMIN (conforme o atributo da classe).</summary>
     [HttpPost]
+    [Authorize(Roles = "ADMIN")] // Sobrescreve permitindo ambas as roles
     [ProducesResponseType(typeof(UpsertCustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(UpsertCustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -172,6 +172,7 @@ public sealed class CustomerController(ISender sender) : ControllerBase
 
     /// <summary>Remove um cliente - Apenas ADMIN.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "ADMIN")] // Sobrescreve permitindo ambas as roles
     [ProducesResponseType(typeof(DeleteCustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
