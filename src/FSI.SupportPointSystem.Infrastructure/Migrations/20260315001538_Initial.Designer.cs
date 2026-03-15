@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FSI.SupportPointSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260311134359_InitialDatabaseMySQL")]
-    partial class InitialDatabaseMySQL
+    [Migration("20260315001538_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -204,6 +204,62 @@ namespace FSI.SupportPointSystem.Infrastructure.Migrations
                                 .HasForeignKey("CustomerId");
                         });
 
+                    b.OwnsOne("FSI.SupportPointSystem.Domain.ValueObjects.Address", "Address", b1 =>
+                        {
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("char(36)");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("Address_City");
+
+                            b1.Property<string>("Complement")
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("Address_Complement");
+
+                            b1.Property<string>("Neighborhood")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("varchar(100)")
+                                .HasColumnName("Address_Neighborhood");
+
+                            b1.Property<string>("Number")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("varchar(20)")
+                                .HasColumnName("Address_Number");
+
+                            b1.Property<string>("State")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("varchar(2)")
+                                .HasColumnName("Address_State");
+
+                            b1.Property<string>("Street")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("varchar(200)")
+                                .HasColumnName("Address_Street");
+
+                            b1.Property<string>("ZipCode")
+                                .IsRequired()
+                                .HasMaxLength(8)
+                                .HasColumnType("varchar(8)")
+                                .HasColumnName("Address_ZipCode");
+
+                            b1.HasKey("CustomerId");
+
+                            b1.ToTable("Customers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId");
+                        });
+
+                    b.Navigation("Address");
+
                     b.Navigation("LocationTarget")
                         .IsRequired();
                 });
@@ -221,13 +277,13 @@ namespace FSI.SupportPointSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("FSI.SupportPointSystem.Domain.Entities.Visit", b =>
                 {
-                    b.HasOne("FSI.SupportPointSystem.Domain.Entities.Customer", null)
+                    b.HasOne("FSI.SupportPointSystem.Domain.Entities.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("FSI.SupportPointSystem.Domain.Entities.Seller", null)
+                    b.HasOne("FSI.SupportPointSystem.Domain.Entities.Seller", "Seller")
                         .WithMany()
                         .HasForeignKey("SellerId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -283,6 +339,10 @@ namespace FSI.SupportPointSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CheckoutLocation");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Seller");
                 });
 #pragma warning restore 612, 618
         }
